@@ -46,7 +46,8 @@ public class LargeDataMergeSort {
     
     
     public static void main(String[] args) {
-        System.out.println(args.length);
+        
+        // The program expects 2 arguments
         if (args.length != 2) {
             System.out.println("This program requires two arguments: a file with"
                     + " decimal numbers to sort, and a maximum amount of "
@@ -57,6 +58,8 @@ public class LargeDataMergeSort {
                     + " as \"1G\" or \"256M\".");
             return;
         }
+        
+        // If the arguments look okay, let's try and handle them
         else {
             File f = new File(args[0]);
             INPUT_FILE = f.getName();
@@ -100,17 +103,26 @@ public class LargeDataMergeSort {
                         + " following characters is permitted: K, M, G");
             }
         }
+        // END OF ARGUMENT HANDLING
+
+        int maxInts = MAX_SORT_RAM / 4; // Integers are 4 bytes
         
-        int maxInts = MAX_SORT_RAM / 4; // Size of int
-        
-        
+        // Bulk of the actual program logic is below
         int numFiles = createSortPartitions(maxInts);
         sortPartitionedFiles(numFiles);
         deletePartitionedFiles(numFiles);
     }
     
+    /***************************************************************************
+     * Takes the input file and partitions it into as many binary output files
+     * are needed to make the files sortable in the given amount of RAM (this
+     * program uses an internal merge sort, so MAX_RAM/2)
+     * @param maxInts the maximum number of integers a file should store
+     * @return how many files were created in this method
+     */
     public static int createSortPartitions(int maxInts) {
-        int numFiles = 0;// 0;        
+        
+        int numFiles = 0; 
         
         try (Scanner sc = new Scanner(new File(INPUT_FILE_LOCATION)))
         {
@@ -120,6 +132,7 @@ public class LargeDataMergeSort {
             
             int[] intArray = null;
             
+            // Begin creating all of the partition files required
             while (sc.hasNextLine()) {
                 // Create new empty array if we need to
                 if (intCounter == 0) {
@@ -136,8 +149,8 @@ public class LargeDataMergeSort {
                 if (intCounter == 0 || !sc.hasNextLine()) {
                     
                     // Create new DataOutputStream
-                    numFiles++;
-                    currentFile++;
+                    numFiles++; // Since we're creating a new file
+                    currentFile++; // We want a new filename!
                     try {
                         dos = new DataOutputStream(
                                 new BufferedOutputStream(
@@ -147,9 +160,9 @@ public class LargeDataMergeSort {
                     }
                     
                     
-                    // Handle sorting, writing to the file, and closing it
+                  //- Handle sorting, writing to the file, and closing it
                     
-                    // Determine whet our end index is
+                    // Determine what our end index is
                     int endIndex = intCounter > 0 ? intCounter-1 : intArray.length-1;
                     
                     // Sort with our preferred sort method (mergesort)
@@ -173,6 +186,12 @@ public class LargeDataMergeSort {
         return numFiles;
     }
     
+    
+    /***************************************************************************
+     * Sorts the partitioned files into a sorted text file, `sorted.txt`, stored
+     * in the same location as the input file.
+     * @param numFiles Takes the number of files which we need to read
+     */
     public static void sortPartitionedFiles(int numFiles) {
         // Create a considerable buffer size for each file
         // and leave double the buffer size for the output
@@ -228,6 +247,8 @@ public class LargeDataMergeSort {
             int minValue = Integer.MAX_VALUE;
             int minIndex = -1;
             
+            // Loop through partitioned files for numbers to merge into the
+            // final file
             for (int i = 0; i < numFiles; i++) {
                 if (streamOpen[i]) {
                     intsLeft = true;
@@ -237,7 +258,6 @@ public class LargeDataMergeSort {
                             hasValue[i] = true;
                         } catch (EOFException eof) {
                             try {
-                                System.out.println("Stream " + i + " closed");
                                 dis[i].close();
                                 streamOpen[i] = false;
                             } catch (IOException ex) {
@@ -248,6 +268,7 @@ public class LargeDataMergeSort {
                             System.exit(1);
                         }
                     }
+                    // Update minimum value and what file we're pulling it from
                     if (minValue >= minBuffer[i]) {
                         minValue = minBuffer[i];
                         minIndex = i;
@@ -255,6 +276,8 @@ public class LargeDataMergeSort {
                 }
             }
             
+            // If we need to output to the file, do so and update that there is
+            // an empty value slot in the array
             if (minIndex > -1) {
                 pw.println(minValue);
                 hasValue[minIndex] = false;
@@ -262,11 +285,15 @@ public class LargeDataMergeSort {
         }
         
         pw.close();
-        System.out.println("Sort successful!");
+        System.out.println("Sort successful!"); // :)
         
     }
     
-    
+    /***************************************************************************
+     * Cleans up partition, or "Split" files that were created when running the
+     * program.
+     * @param numFiles the number of files to be deleted
+     */
     public static void deletePartitionedFiles(int numFiles) {
         for(int i = 1; i <= numFiles; i++) {
             File f = new File(WORKSPACE+"S"+i);
@@ -276,11 +303,23 @@ public class LargeDataMergeSort {
         }
     }
     
-    
+    /***************************************************************************
+     * Internal merge sort, not to be confused with the external merge sort 
+     * which is done by combining the sorted files.
+     * @param arr The array
+     * @param endIndex The end index
+     */
     public static void sort(int[] arr, int endIndex) {
         mergeSort(arr, 0, endIndex);
     }
     
+    /***************************************************************************
+     * Merge integers for the internal merge sort
+     * @param arr int array to be merged
+     * @param low the lower index
+     * @param mid the middle index
+     * @param high the upper index
+     */
     public static void merge(int[] arr, int low, int mid, int high) {
         
         int n1 = mid - low + 1;
@@ -326,6 +365,12 @@ public class LargeDataMergeSort {
         
     }
     
+    /***************************************************************************
+     * The internal mergesort recursive method
+     * @param arr the array to sort
+     * @param low the lower index
+     * @param high the upper index
+     */
     public static void mergeSort(int[] arr, int low, int high) {
         if (low < high) {
             int mid = (low+(high-1)) / 2;
